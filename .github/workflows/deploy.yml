@@ -28,7 +28,6 @@ jobs:
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
           TARGET: ${{ secrets.VPS_TARGET }}
-          CURRENT_SYMLINK: ${{ secrets.VPS_TARGET }}/current
           BASE_DIR: ${{ secrets.VPS_TARGET }}
         run: |
           # Define release directory with timestamp
@@ -58,3 +57,7 @@ jobs:
 
           # Step 5: Update the current symlink
           ssh $REMOTE_USER@$REMOTE_HOST "rsync -a --delete $RELEASE_DIR/* ${{ secrets.VPS_TARGET }}/live"
+
+          ssh $REMOTE_USER@$REMOTE_HOST << EOF
+            ln -nfs $BASE_DIR/.env ${{ secrets.VPS_TARGET }}/live/.env
+          EOF
