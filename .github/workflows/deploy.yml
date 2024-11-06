@@ -27,7 +27,7 @@ jobs:
           SOURCE: "."
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
-          TARGET: ${{ secrets.VPS_TARGET }}
+          TARGET: ${{ secrets.VPS_TARGET }}/deployments/${{ format('yyyyMMddHHmmss', github.event.timestamp) }}
 
       - name: Run migrations
         uses: appleboy/ssh-action@v0.1.6
