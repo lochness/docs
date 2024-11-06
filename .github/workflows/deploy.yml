@@ -52,5 +52,5 @@ jobs:
             /usr/local/php83/bin/php artisan optimize
           EOF
 
-          # Step 4: Update the current symlink
+          # Step 4: Update the current symlink like envoyer
           ssh $REMOTE_USER@$REMOTE_HOST "rsync -a $RELEASE_DIR/* $CURRENT_SYMLINK"
