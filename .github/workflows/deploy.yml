@@ -12,6 +12,11 @@ jobs:
       - name: Clone New Release
         uses: actions/checkout@v3
 
+      - name: Set up SSH Agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -27,15 +32,27 @@ jobs:
           SOURCE: "."
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
-          TARGET: ${{ secrets.VPS_TARGET }}/deployments/${{ format('yyyyMMddHHmmss', github.event.timestamp) }}
+          TARGET: ${{ secrets.VPS_TARGET }}
+          CURRENT_SYMLINK: ${{ secrets.VPS_TARGET }}/live
+        run: |
+          # Define release directory with timestamp
+          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+          RELEASE_DIR="${{ secrets.VPS_TARGET }}/releases/$TIMESTAMP"
 
-      - name: Run migrations
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ${{ secrets.VPS_TARGET }}
+          # Step 1: Create the new release directory
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "mkdir -p $RELEASE_DIR"
+
+          # Step 2: Sync the code to the new release directory
+          rsync -avz --exclude='.git' --exclude='node_modules' --exclude='storage' ./ $REMOTE_USER@$REMOTE_HOST:$RELEASE_DIR
+
+          # Step 3: Run deployment commands on the server
+          ssh $REMOTE_USER@$REMOTE_HOST << EOF
+            cd $RELEASE_DIR
+            # Install dependencies and other necessary setup
+            /usr/local/php83/bin/php /usr/local/php83/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
             /usr/local/php83/bin/php artisan migrate --force
             /usr/local/php83/bin/php artisan optimize
+          EOF
+
+          # Step 4: Update the current symlink
+          ssh $REMOTE_USER@$REMOTE_HOST "rsync -a $RELEASE_DIR/* $CURRENT_SYMLINK"
