@@ -57,4 +57,4 @@ jobs:
           EOF
 
           # Step 5: Update the current symlink
-          ssh $REMOTE_USER@$REMOTE_HOST "rsync -a $RELEASE_DIR/* $CURRENT_SYMLINK"
+          ssh $REMOTE_USER@$REMOTE_HOST "ln -nfs $RELEASE_DIR/* $CURRENT_SYMLINK"
