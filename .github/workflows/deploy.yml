@@ -25,11 +25,9 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --optimize-autoloader --no-dev --no-interaction --no-progress --prefer-dist
 
-      - name: Synchronize files to server
-        uses: easingthemes/ssh-deploy@v2.1.5
+      - name: Deploy to Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SOURCE: "."
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
           TARGET: ${{ secrets.VPS_TARGET }}
