@@ -22,9 +22,6 @@ jobs:
         with:
           php-version: 8.3
 
-      - name: Install Composer Dependencies
-        run: composer install --optimize-autoloader --no-dev --no-interaction --no-progress --prefer-dist
-
       - name: Deploy to Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -32,6 +29,7 @@ jobs:
           REMOTE_USER: ${{ secrets.VPS_USER }}
           TARGET: ${{ secrets.VPS_TARGET }}
           CURRENT_SYMLINK: ${{ secrets.VPS_TARGET }}/current
+          BASE_DIR: ${{ secrets.VPS_TARGET }}
         run: |
           # Define release directory with timestamp
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
@@ -43,7 +41,13 @@ jobs:
           # Step 2: Sync the code to the new release directory
           rsync -avz --exclude='.git' --exclude='node_modules' --exclude='storage' ./ $REMOTE_USER@$REMOTE_HOST:$RELEASE_DIR
 
-          # Step 3: Run deployment commands on the server
+          # Step 3: Symlink the storage folder & -env
+          ssh $REMOTE_USER@$REMOTE_HOST << EOF
+            ln -nfs $BASE_DIR/storage $RELEASE_DIR/storage
+            ln -nfs $BASE_DIR/.env $RELEASE_DIR/.env
+          EOF
+
+          # Step 4: Run deployment commands on the server
           ssh $REMOTE_USER@$REMOTE_HOST << EOF
             cd $RELEASE_DIR
             # Install dependencies and other necessary setup
@@ -52,5 +56,5 @@ jobs:
             /usr/local/php83/bin/php artisan optimize
           EOF
 
-          # Step 4: Update the current symlink
+          # Step 5: Update the current symlink
           ssh $REMOTE_USER@$REMOTE_HOST "rsync -a $RELEASE_DIR/* $CURRENT_SYMLINK"
