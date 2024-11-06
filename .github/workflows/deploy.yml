@@ -31,7 +31,7 @@ jobs:
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
           TARGET: ${{ secrets.VPS_TARGET }}
-          CURRENT_SYMLINK: ${{ secrets.VPS_TARGET }}/live
+          CURRENT_SYMLINK: ${{ secrets.VPS_TARGET }}/current
         run: |
           # Define release directory with timestamp
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
