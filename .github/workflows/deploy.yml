@@ -40,24 +40,24 @@ jobs:
           # Step 2: Sync the code to the new release directory
           rsync -avz --exclude='.git' --exclude='node_modules' --exclude='storage' ./ $REMOTE_USER@$REMOTE_HOST:$RELEASE_DIR
 
-          # Step 3: Symlink the storage folder & -env
-          ssh $REMOTE_USER@$REMOTE_HOST << EOF
-            ln -nfs $BASE_DIR/storage $RELEASE_DIR/storage
-            ln -nfs $BASE_DIR/.env $RELEASE_DIR/.env
-          EOF
-
           # Step 4: Run deployment commands on the server
           ssh $REMOTE_USER@$REMOTE_HOST << EOF
             cd $RELEASE_DIR
             # Install dependencies and other necessary setup
             /usr/local/php83/bin/php /usr/local/php83/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
-            /usr/local/php83/bin/php artisan migrate --force
-            /usr/local/php83/bin/php artisan optimize
           EOF
 
           # Step 5: Update the current symlink
           ssh $REMOTE_USER@$REMOTE_HOST "rsync -a --delete $RELEASE_DIR/* ${{ secrets.VPS_TARGET }}/live"
 
           ssh $REMOTE_USER@$REMOTE_HOST << EOF
+            ln -nfs $BASE_DIR/storage ${{ secrets.VPS_TARGET }}/live/storage
             ln -nfs $BASE_DIR/.env ${{ secrets.VPS_TARGET }}/live/.env
+          EOF
+
+          ssh $REMOTE_USER@$REMOTE_HOST << EOF
+            cd ${{ secrets.VPS_TARGET }}/live
+            /usr/local/php83/bin/php artisan storage:link
+            /usr/local/php83/bin/php artisan migrate --force
+            /usr/local/php83/bin/php artisan optimize
           EOF
